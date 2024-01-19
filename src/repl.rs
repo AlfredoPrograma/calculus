@@ -1,5 +1,7 @@
 use std::io::{self, Write};
 
+use crate::tokenizer::Tokenizer;
+
 fn display_caret(stdout: &mut io::Stdout) {
     stdout
         .write("> ".as_bytes())
@@ -26,6 +28,9 @@ pub fn run() {
         display_caret(&mut stdout);
         let input = read_input(&stdin);
 
-        print!("{input}")
+        let mut tokenizer = Tokenizer::new(&input.trim());
+        tokenizer.tokenize();
+
+        println!("{:?}", tokenizer.tokens)
     }
 }
