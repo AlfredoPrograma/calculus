@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::tokenizer::Tokenizer;
+use crate::{ast::parser::Parser, tokenizer::Tokenizer};
 
 fn display_caret(stdout: &mut io::Stdout) {
     stdout
@@ -31,6 +31,12 @@ pub fn run() {
         let mut tokenizer = Tokenizer::new(&input.trim());
         tokenizer.tokenize();
 
-        println!("{:?}", tokenizer.tokens)
+        let mut parser = Parser::new(tokenizer.tokens.into_iter());
+
+        let ast = parser.program();
+        println!("{}", ast);
+
+        let result = ast.eval();
+        println!("{}", result);
     }
 }

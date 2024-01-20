@@ -1,3 +1,4 @@
+mod ast;
 mod repl;
 mod tokenizer;
 

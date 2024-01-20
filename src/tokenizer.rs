@@ -1,9 +1,18 @@
-use std::str::Chars;
+use std::{fmt, str::Chars};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Integer(i32),
     Operator(String),
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Token::Integer(int) => write!(f, "{}", int),
+            Token::Operator(operator) => write!(f, "{}", operator),
+        }
+    }
 }
 
 fn peek(chars: &Chars) -> Option<char> {
