@@ -62,7 +62,6 @@ fn parse_operator<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
     token
 }
 
-// TODO: update to allow parsing floats and change name to parse number
 fn parse_number<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
     const CANNOT_PARSE_MSG: &'static str = "cannot parse number";
     let mut str_number = String::new();
@@ -71,6 +70,18 @@ fn parse_number<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
         // If first character is not numeric means parser doesnt match and return `None` immediately
         if !c.is_numeric() && str_number.is_empty() {
             return Err(CANNOT_PARSE_MSG);
+        }
+
+        // If current character is `.` so we must check if number string already has a `.`
+        if c == '.' {
+            // If it has, so it is an invalid number, because only one `.` character is allowed per number
+            if str_number.find('.').is_some() {
+                return Err(CANNOT_PARSE_MSG);
+            }
+
+            chars.next();
+            str_number.push(c);
+            continue;
         }
 
         // If some characters already matched but reaches a non numeric character, it means
