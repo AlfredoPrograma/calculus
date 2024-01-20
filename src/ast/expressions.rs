@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::tokenizer::Token;
+use crate::tokenizer::{Operator, Token};
 
 /// Represents the set of expressions used to build the nodes for the AST.
 #[derive(Debug)]
@@ -37,18 +37,17 @@ impl Expression {
     pub fn eval(self) -> i32 {
         match self {
             Expression::Binary(binary) => match binary.operator {
-                Token::Operator(operator) => match operator.as_str() {
-                    "+" => binary.left.eval() + binary.right.eval(),
-                    "-" => binary.left.eval() - binary.right.eval(),
-                    "*" => binary.left.eval() * binary.right.eval(),
-                    "/" => binary.left.eval() / binary.right.eval(),
-                    _ => unreachable!(),
+                Token::Operator(operator) => match operator {
+                    Operator::Plus => binary.left.eval() + binary.right.eval(),
+                    Operator::Minus => binary.left.eval() - binary.right.eval(),
+                    Operator::Star => binary.left.eval() * binary.right.eval(),
+                    Operator::Slash => binary.left.eval() / binary.right.eval(),
                 },
                 _ => unreachable!(),
             },
             Expression::Unary(unary) => match unary.operator {
-                Token::Operator(operator) => match operator.as_str() {
-                    "-" => unary.expr.eval() * (-1),
+                Token::Operator(operator) => match operator {
+                    Operator::Minus => unary.expr.eval() * (-1),
                     _ => unreachable!(),
                 },
                 _ => unreachable!(),

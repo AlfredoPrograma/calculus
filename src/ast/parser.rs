@@ -4,7 +4,7 @@ use std::{fmt::Debug, mem};
 
 use crate::{
     ast::{expressions::UnaryExpr, helpers::match_token},
-    tokenizer::Token,
+    tokenizer::{Operator, Token},
 };
 
 use super::{
@@ -41,8 +41,8 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
 
         if let Some(operator) = match_concrete_token(
             &[
-                Token::Operator("+".to_string()),
-                Token::Operator("-".to_string()),
+                Token::Operator(Operator::Plus),
+                Token::Operator(Operator::Minus),
             ],
             &mut self.tokens,
         ) {
@@ -64,8 +64,8 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
 
         if let Some(operator) = match_concrete_token(
             &[
-                Token::Operator("*".to_string()),
-                Token::Operator("/".to_string()),
+                Token::Operator(Operator::Star),
+                Token::Operator(Operator::Slash),
             ],
             &mut self.tokens,
         ) {
@@ -85,7 +85,7 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
         match peek(&mut self.tokens) {
             Some(token) => match token {
                 Token::Operator(ref operator) => {
-                    if *operator == "-".to_string() {
+                    if *operator == Operator::Minus {
                         self.tokens.next();
                         let literal = self.literal();
 

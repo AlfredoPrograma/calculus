@@ -1,9 +1,32 @@
 use std::{fmt, str::Chars};
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Operator {
+    Minus,
+    Plus,
+    Star,
+    Slash,
+}
+
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let operator: &str;
+
+        match self {
+            Operator::Plus => operator = "+",
+            Operator::Minus => operator = "-",
+            Operator::Star => operator = "*",
+            Operator::Slash => operator = "/",
+        }
+
+        write!(f, "{operator}")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Integer(i32),
-    Operator(String),
+    Operator(Operator),
 }
 
 impl fmt::Display for Token {
@@ -23,10 +46,10 @@ fn parse_operator<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
     let c = peek(chars);
 
     let token = match c {
-        Some('+') => Ok(Some(Token::Operator('+'.to_string()))),
-        Some('-') => Ok(Some(Token::Operator('-'.to_string()))),
-        Some('*') => Ok(Some(Token::Operator('*'.to_string()))),
-        Some('/') => Ok(Some(Token::Operator('/'.to_string()))),
+        Some('+') => Ok(Some(Token::Operator(Operator::Plus))),
+        Some('-') => Ok(Some(Token::Operator(Operator::Minus))),
+        Some('*') => Ok(Some(Token::Operator(Operator::Star))),
+        Some('/') => Ok(Some(Token::Operator(Operator::Slash))),
         Some('\n' | ' ') => Ok(None),
         _ => Err("cannot parse operator"),
     };
@@ -40,12 +63,13 @@ fn parse_operator<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
 }
 
 fn parse_integer<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
+    const CANNOT_PARSE_MSG: &'static str = "cannot parse integer";
     let mut str_integer = String::new();
 
     while let Some(c) = peek(chars) {
         // If first character is not numeric means parser doesnt match and return `None` immediately
         if !c.is_numeric() && str_integer.is_empty() {
-            return Err("cannot parse integer");
+            return Err(CANNOT_PARSE_MSG);
         }
 
         // If some characters already matched but reaches a non numeric character, it means
@@ -59,11 +83,7 @@ fn parse_integer<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
         str_integer.push(c);
     }
 
-    let token = Token::Integer(
-        str_integer
-            .parse::<i32>()
-            .expect("cannot parse into integer"),
-    );
+    let token = Token::Integer(str_integer.parse::<i32>().expect(CANNOT_PARSE_MSG));
 
     Ok(Some(token))
 }
