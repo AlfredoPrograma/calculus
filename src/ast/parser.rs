@@ -94,7 +94,7 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
 
                     panic!("unexpected token from unary")
                 }
-                Token::Integer(_) => self.literal(),
+                Token::Number(_) => self.literal(),
             },
             None => panic!("end of input"),
         }
@@ -105,7 +105,7 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
     /// Literal is a `terminal` symbol, so does not belongs to any production rule
     fn literal(&mut self) -> Expression {
         if let Some(number) =
-            match_token(&[mem::discriminant(&Token::Integer(0))], &mut self.tokens)
+            match_token(&[mem::discriminant(&Token::Number(0.0))], &mut self.tokens)
         {
             return Expression::Literal(number);
         }

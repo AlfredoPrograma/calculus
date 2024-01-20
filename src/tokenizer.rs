@@ -25,14 +25,14 @@ impl fmt::Display for Operator {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    Integer(i32),
+    Number(f64),
     Operator(Operator),
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Token::Integer(int) => write!(f, "{}", int),
+            Token::Number(number) => write!(f, "{}", number),
             Token::Operator(operator) => write!(f, "{}", operator),
         }
     }
@@ -62,13 +62,14 @@ fn parse_operator<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
     token
 }
 
-fn parse_integer<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
-    const CANNOT_PARSE_MSG: &'static str = "cannot parse integer";
-    let mut str_integer = String::new();
+// TODO: update to allow parsing floats and change name to parse number
+fn parse_number<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
+    const CANNOT_PARSE_MSG: &'static str = "cannot parse number";
+    let mut str_number = String::new();
 
     while let Some(c) = peek(chars) {
         // If first character is not numeric means parser doesnt match and return `None` immediately
-        if !c.is_numeric() && str_integer.is_empty() {
+        if !c.is_numeric() && str_number.is_empty() {
             return Err(CANNOT_PARSE_MSG);
         }
 
@@ -80,10 +81,11 @@ fn parse_integer<'a>(chars: &'a mut Chars) -> Result<Option<Token>, &'a str> {
 
         // Keep updating iterator status while numeric characters are beign found
         chars.next();
-        str_integer.push(c);
+        str_number.push(c);
     }
 
-    let token = Token::Integer(str_integer.parse::<i32>().expect(CANNOT_PARSE_MSG));
+    let parsed_number = str_number.parse::<f64>().expect(CANNOT_PARSE_MSG);
+    let token = Token::Number(parsed_number);
 
     Ok(Some(token))
 }
@@ -107,7 +109,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn scan_token(&mut self) {
-        let parsers = [parse_integer, parse_operator];
+        let parsers = [parse_number, parse_operator];
 
         for p in parsers {
             // Check if token parsing was successful

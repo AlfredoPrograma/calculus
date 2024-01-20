@@ -24,7 +24,7 @@ impl fmt::Display for Expression {
             ),
             Expression::Unary(unary) => write!(
                 f,
-                "({operator} {expr})",
+                "({operator}{expr})",
                 operator = unary.operator,
                 expr = unary.expr
             ),
@@ -34,7 +34,7 @@ impl fmt::Display for Expression {
 }
 
 impl Expression {
-    pub fn eval(self) -> i32 {
+    pub fn eval(self) -> f64 {
         match self {
             Expression::Binary(binary) => match binary.operator {
                 Token::Operator(operator) => match operator {
@@ -47,13 +47,13 @@ impl Expression {
             },
             Expression::Unary(unary) => match unary.operator {
                 Token::Operator(operator) => match operator {
-                    Operator::Minus => unary.expr.eval() * (-1),
+                    Operator::Minus => unary.expr.eval() * (-1.0),
                     _ => unreachable!(),
                 },
                 _ => unreachable!(),
             },
             Expression::Literal(number) => match number {
-                Token::Integer(n) => n,
+                Token::Number(n) => n,
                 _ => unreachable!(),
             },
         }
