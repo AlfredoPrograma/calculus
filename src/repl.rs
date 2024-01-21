@@ -28,7 +28,7 @@ pub fn run() {
         display_caret(&mut stdout);
         let input = read_input(&stdin);
 
-        let mut tokenizer = Tokenizer::new(&input.trim());
+        let mut tokenizer = Tokenizer::new(&input);
         tokenizer.tokenize();
 
         let mut parser = Parser::new(tokenizer.tokens.into_iter());
