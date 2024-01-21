@@ -2,7 +2,7 @@
 
 use std::mem;
 
-use crate::tokenizer::Token;
+use crate::tokenizer::tokens::Token;
 
 /// Takes a look at the next element of the iterator without consume it.
 pub fn peek<I: Iterator<Item = Token> + Clone>(tokens_iter: &I) -> Option<Token> {

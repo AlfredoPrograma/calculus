@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::{ast::parser::Parser, tokenizer::Tokenizer};
+use crate::{ast::parser::Parser, tokenizer::parser::Tokenizer};
 
 fn display_caret(stdout: &mut io::Stdout) {
     stdout

@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::tokenizer::{Operator, Token};
+use crate::tokenizer::tokens::{Operator, Token};
 
 /// Represents the set of expressions used to build the nodes for the AST.
 #[derive(Debug, Clone)]
