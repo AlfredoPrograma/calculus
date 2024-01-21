@@ -5,7 +5,7 @@ use std::fmt;
 use crate::tokenizer::{Operator, Token};
 
 /// Represents the set of expressions used to build the nodes for the AST.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Binary(BinaryExpr),
     Unary(UnaryExpr),
@@ -60,7 +60,7 @@ impl Expression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BinaryExpr {
     left: Box<Expression>,
     operator: Token,
@@ -77,7 +77,7 @@ impl BinaryExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UnaryExpr {
     operator: Token,
     expr: Box<Expression>,

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{fmt::Debug, mem};
 
 use crate::{
@@ -35,47 +33,76 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
 
     /// Builds an expression.
     ///
-    /// Production rule: `Expression -> Term (("+" | "-") Term)*`
+    /// Production rule: `Expression -> Factor (("+" | "-") Factor)*`
     fn expression(&mut self) -> Expression {
-        let left = self.term();
+        const TERM_OPERATORS: &[Token] = &[
+            Token::Operator(Operator::Plus),
+            Token::Operator(Operator::Minus),
+        ];
 
-        if let Some(operator) = match_concrete_token(
-            &[
-                Token::Operator(Operator::Plus),
-                Token::Operator(Operator::Minus),
-            ],
-            &mut self.tokens,
-        ) {
-            let right = self.expression();
+        let mut binary_expr: Option<Expression> = None;
+        let left = self.factor();
 
-            let expr = BinaryExpr::new(left, operator, right);
+        while let Some(operator) = match_concrete_token(TERM_OPERATORS, &mut self.tokens) {
+            let right = self.factor();
 
-            return Expression::Binary(expr);
+            match binary_expr {
+                Some(prev_expr) => {
+                    binary_expr = Some(Expression::Binary(BinaryExpr::new(
+                        prev_expr, operator, right,
+                    )))
+                }
+                None => {
+                    binary_expr = Some(Expression::Binary(BinaryExpr::new(
+                        left.clone(),
+                        operator,
+                        right,
+                    )))
+                }
+            };
         }
 
-        left
+        match binary_expr {
+            Some(binary_expr) => binary_expr,
+            None => left,
+        }
     }
 
-    /// Builds a term.
+    /// Builds a factor.
     ///
-    /// Production rule: `Term -> Unary (("*" | "/") Unary)*`
-    fn term(&mut self) -> Expression {
+    /// Production rule: `Factor -> Unary (("*" | "/") Unary)*`
+    fn factor(&mut self) -> Expression {
+        const FACTOR_OPERATORS: &[Token] = &[
+            Token::Operator(Operator::Star),
+            Token::Operator(Operator::Slash),
+        ];
+
+        let mut binary_expr: Option<Expression> = None;
         let left = self.unary();
 
-        if let Some(operator) = match_concrete_token(
-            &[
-                Token::Operator(Operator::Star),
-                Token::Operator(Operator::Slash),
-            ],
-            &mut self.tokens,
-        ) {
-            let right = self.expression();
-            let expr = BinaryExpr::new(left, operator, right);
+        while let Some(operator) = match_concrete_token(FACTOR_OPERATORS, &mut self.tokens) {
+            let right = self.unary();
 
-            return Expression::Binary(expr);
+            match binary_expr {
+                Some(prev_expr) => {
+                    binary_expr = Some(Expression::Binary(BinaryExpr::new(
+                        prev_expr, operator, right,
+                    )))
+                }
+                None => {
+                    binary_expr = Some(Expression::Binary(BinaryExpr::new(
+                        left.clone(),
+                        operator.clone(),
+                        right,
+                    )))
+                }
+            }
         }
 
-        left
+        match binary_expr {
+            Some(binary_expr) => binary_expr,
+            None => left,
+        }
     }
 
     /// Builds an unary.
