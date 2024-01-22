@@ -51,9 +51,11 @@ pub fn match_concrete_token<I: Iterator<Item = Token> + Clone>(
 
 #[cfg(test)]
 mod ast_helpers_tests {
-    use crate::tokenizer::tokens::Token;
+    use std::mem;
 
-    use super::peek;
+    use crate::tokenizer::tokens::{Operator, Token};
+
+    use super::{match_token, peek};
 
     #[test]
     fn test_peek() {
@@ -76,5 +78,67 @@ mod ast_helpers_tests {
             tokens_source.len(),
             "should not consume token from the iterator after peek"
         );
+    }
+
+    #[test]
+    fn test_match_token_success() {
+        // Arrange
+        let matching_token = Token::Number(10.0);
+        let base_number_token = Token::Number(0.0);
+        let mut tokens_source = vec![matching_token.clone()].into_iter();
+
+        // Act
+        let matched = match_token(
+            // Notice we are trying to match `Token::Number(10.0)` against `Token::Number(0.0)`.
+            // It is intentional because `match_token` just compares the enum variant, so we dont care about the internal value of the token.
+            &[mem::discriminant(&base_number_token)],
+            &mut tokens_source,
+        );
+
+        // Assert
+        assert!(
+            matched.is_some(),
+            "should match token and return a fullfilled option"
+        );
+
+        assert_eq!(
+            mem::discriminant(&matched.unwrap()),
+            mem::discriminant(&matching_token),
+            "token variants should match without consider their internal values"
+        );
+
+        assert_eq!(
+            tokens_source.count(),
+            0,
+            "matching token should consume iterator element"
+        )
+    }
+
+    #[test]
+    fn test_match_token_fails() {
+        // Arrange
+        let number_token = Token::Number(10.0);
+        let operator_token = Token::Operator(Operator::Star);
+        let mut tokens_source = vec![number_token].into_iter();
+
+        // Act
+        let matched = match_token(
+            // Notice in this case we are trying to match `Token::Number(10.0)` against `Token::Operator(Operator::Star)`.
+            // Since token's variants are not the same, it shouldn't match
+            &[mem::discriminant(&operator_token)],
+            &mut tokens_source,
+        );
+
+        // Assert
+        assert!(
+            matched.is_none(),
+            "should return none if token variants does not match"
+        );
+
+        assert_eq!(
+            tokens_source.count(),
+            1,
+            "non matching tokens shouldn't consume current iterator element"
+        )
     }
 }
