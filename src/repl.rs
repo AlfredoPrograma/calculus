@@ -29,7 +29,11 @@ pub fn run() {
         let input = read_input(&stdin);
 
         let mut tokenizer = Tokenizer::new(&input);
-        tokenizer.tokenize();
+
+        if let Err(err) = tokenizer.tokenize() {
+            eprintln!("{err}");
+            continue;
+        }
 
         let mut parser = Parser::new(tokenizer.tokens.into_iter());
 
