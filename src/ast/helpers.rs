@@ -48,3 +48,33 @@ pub fn match_concrete_token<I: Iterator<Item = Token> + Clone>(
 
     None
 }
+
+#[cfg(test)]
+mod ast_helpers_tests {
+    use crate::tokenizer::tokens::Token;
+
+    use super::peek;
+
+    #[test]
+    fn test_peek() {
+        // Arrange
+        let tokens_source: Vec<Token> = vec![Token::Number(10.0)];
+        let tokens_iterator = tokens_source.clone().into_iter();
+
+        // Act
+        let peeked = peek(&tokens_iterator.clone()).unwrap();
+
+        // Assert
+        assert_eq!(
+            peeked,
+            tokens_source.clone()[0],
+            "should take a look at the current element of the iterator"
+        );
+
+        assert_eq!(
+            tokens_iterator.count(),
+            tokens_source.len(),
+            "should not consume token from the iterator after peek"
+        );
+    }
+}
