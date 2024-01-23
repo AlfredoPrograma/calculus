@@ -186,7 +186,7 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
             return Ok(Expression::Literal(number));
         }
 
-        Err(ASTParseError::new("unexpected expression"))
+        Err(ASTParseError::new("invalid expression"))
     }
 }
 

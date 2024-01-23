@@ -1,8 +1,28 @@
-use std::str::Chars;
+use core::fmt;
+use std::{error::Error, str::Chars};
 
 use crate::tokenizer::helpers::{parse_number, parse_operator};
 
 use super::tokens::Token;
+
+#[derive(Debug)]
+pub struct TokenizerError {
+    message: &'static str,
+}
+
+impl TokenizerError {
+    pub fn new(message: &'static str) -> Self {
+        Self { message }
+    }
+}
+
+impl fmt::Display for TokenizerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[TOKENIZER ERROR]: {}", self.message)
+    }
+}
+
+impl Error for TokenizerError {}
 
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
@@ -22,7 +42,7 @@ impl<'a> Tokenizer<'a> {
         self.chars.clone().count() == 0
     }
 
-    fn scan_token(&mut self) -> Result<(), String> {
+    fn scan_token(&mut self) -> Result<(), TokenizerError> {
         let parsers = [parse_number, parse_operator];
 
         for p in parsers {
@@ -38,10 +58,10 @@ impl<'a> Tokenizer<'a> {
             }
         }
 
-        Err("[SCAN_TOKEN]: Unexpected token".to_string())
+        Err(TokenizerError::new("unexpected token"))
     }
 
-    pub fn tokenize(&mut self) -> Result<(), String> {
+    pub fn tokenize(&mut self) -> Result<(), TokenizerError> {
         while !self.is_end() {
             if let Err(err) = self.scan_token() {
                 return Err(err);
