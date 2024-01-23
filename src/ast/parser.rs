@@ -1,4 +1,5 @@
-use std::{fmt::Debug, mem};
+use core::fmt;
+use std::{error::Error, fmt::Debug, mem};
 
 use crate::{
     ast::{expressions::UnaryExpr, helpers::match_token},
@@ -9,6 +10,27 @@ use super::{
     expressions::{BinaryExpr, Expression},
     helpers::{match_concrete_token, peek},
 };
+
+#[derive(Debug, Clone)]
+pub struct ASTParseError {
+    message: &'static str,
+}
+
+impl ASTParseError {
+    fn new(message: &'static str) -> Self {
+        Self { message }
+    }
+}
+
+impl fmt::Display for ASTParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[AST PARSE ERROR]: {}", self.message)
+    }
+}
+
+impl Error for ASTParseError {}
+
+type ExpressionResult = Result<Expression, ASTParseError>;
 
 /// Stores the state of the tokens stream and exposes methods for perform the AST building
 #[derive(Debug)]
@@ -27,14 +49,14 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
     /// Builds the root's program expression.
     ///   
     /// Production rule: `Program -> (Term)*`
-    pub fn program(&mut self) -> Expression {
+    pub fn program(&mut self) -> ExpressionResult {
         self.term()
     }
 
     /// Builds a term.
     ///
     /// Production rule: `Term -> Factor (("+" | "-") Factor)*`
-    fn term(&mut self) -> Expression {
+    fn term(&mut self) -> ExpressionResult {
         const TERM_OPERATORS: &[Token] = &[
             Token::Operator(Operator::Plus),
             Token::Operator(Operator::Minus),
@@ -43,27 +65,37 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
         let mut binary_expr: Option<Expression> = None;
         let left = self.factor();
 
+        if left.is_err() {
+            return Err(left.unwrap_err());
+        }
+
         while let Some(operator) = match_concrete_token(TERM_OPERATORS, &mut self.tokens) {
             let right = self.factor();
+
+            if right.is_err() {
+                return Err(right.unwrap_err());
+            }
 
             match binary_expr {
                 Some(prev_expr) => {
                     binary_expr = Some(Expression::Binary(BinaryExpr::new(
-                        prev_expr, operator, right,
+                        prev_expr,
+                        operator,
+                        right.unwrap(),
                     )))
                 }
                 None => {
                     binary_expr = Some(Expression::Binary(BinaryExpr::new(
-                        left.clone(),
+                        left.clone().unwrap(),
                         operator,
-                        right,
+                        right.unwrap(),
                     )))
                 }
             };
         }
 
         match binary_expr {
-            Some(binary_expr) => binary_expr,
+            Some(binary_expr) => Ok(binary_expr),
             None => left,
         }
     }
@@ -71,7 +103,7 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
     /// Builds a factor.
     ///
     /// Production rule: `Factor -> Unary (("*" | "/") Unary)*`
-    fn factor(&mut self) -> Expression {
+    fn factor(&mut self) -> ExpressionResult {
         const FACTOR_OPERATORS: &[Token] = &[
             Token::Operator(Operator::Star),
             Token::Operator(Operator::Slash),
@@ -80,27 +112,37 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
         let mut binary_expr: Option<Expression> = None;
         let left = self.unary();
 
+        if left.is_err() {
+            return Err(left.unwrap_err());
+        }
+
         while let Some(operator) = match_concrete_token(FACTOR_OPERATORS, &mut self.tokens) {
             let right = self.unary();
+
+            if right.is_err() {
+                return Err(right.unwrap_err());
+            }
 
             match binary_expr {
                 Some(prev_expr) => {
                     binary_expr = Some(Expression::Binary(BinaryExpr::new(
-                        prev_expr, operator, right,
+                        prev_expr,
+                        operator,
+                        right.unwrap(),
                     )))
                 }
                 None => {
                     binary_expr = Some(Expression::Binary(BinaryExpr::new(
-                        left.clone(),
+                        left.clone().unwrap(),
                         operator.clone(),
-                        right,
+                        right.unwrap(),
                     )))
                 }
             }
         }
 
         match binary_expr {
-            Some(binary_expr) => binary_expr,
+            Some(binary_expr) => Ok(binary_expr),
             None => left,
         }
     }
@@ -108,7 +150,7 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
     /// Builds an unary.
     ///
     /// Production rule: `"-" Literal | Literal`
-    fn unary(&mut self) -> Expression {
+    fn unary(&mut self) -> ExpressionResult {
         match peek(&mut self.tokens) {
             Some(token) => match token {
                 Token::Operator(ref operator) => {
@@ -116,28 +158,35 @@ impl<I: Iterator<Item = Token> + Clone + Debug> Parser<I> {
                         self.tokens.next();
                         let literal = self.literal();
 
-                        return Expression::Unary(UnaryExpr::new(token.clone(), literal));
+                        if literal.is_err() {
+                            return Err(literal.unwrap_err());
+                        }
+
+                        return Ok(Expression::Unary(UnaryExpr::new(
+                            token.clone(),
+                            literal.unwrap(),
+                        )));
                     }
 
-                    panic!("unexpected token from unary")
+                    return Err(ASTParseError::new("syntax error in <unary> expression"));
                 }
                 Token::Number(_) => self.literal(),
             },
-            None => panic!("uncomplete of input"),
+            None => return Err(ASTParseError::new("syntax error by uncomplete expression")),
         }
     }
 
     /// Builds a literal.
     ///
     /// Literal is a `terminal` symbol, so does not belongs to any production rule
-    fn literal(&mut self) -> Expression {
+    fn literal(&mut self) -> ExpressionResult {
         if let Some(number) =
             match_token(&[mem::discriminant(&Token::Number(0.0))], &mut self.tokens)
         {
-            return Expression::Literal(number);
+            return Ok(Expression::Literal(number));
         }
 
-        panic!("unexpected token")
+        Err(ASTParseError::new("unexpected expression"))
     }
 }
 
@@ -165,7 +214,8 @@ mod ast_parser_tests {
 
         // Assert
         assert_eq!(
-            literal_expr, expected_expr,
+            literal_expr.unwrap(),
+            expected_expr,
             "should build literal expression for given token"
         );
 
@@ -177,16 +227,20 @@ mod ast_parser_tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_literal_fails() {
         // Arrange
         let non_literal_token = Token::Operator(Operator::Star);
         let tokens_source = [non_literal_token].into_iter();
         let mut parser = Parser::new(tokens_source);
 
-        // Act & Assert
-        // Notice we are trying to create a literal from a non literal token (Operator), so function panics.
-        parser.literal();
+        // Act
+        let result = parser.literal();
+
+        // Assert
+        assert!(
+            result.is_err(),
+            "should return error if cannot parse literal expression"
+        )
     }
 
     #[test]
@@ -208,7 +262,8 @@ mod ast_parser_tests {
 
         // Assert
         assert_eq!(
-            expected_expr, unary_expr,
+            expected_expr,
+            unary_expr.unwrap(),
             "should build unary expression for a valid stream of tokens"
         );
     }
@@ -227,13 +282,13 @@ mod ast_parser_tests {
 
         // Assert
         assert_eq!(
-            expected_expr, literal_from_unary,
+            expected_expr,
+            literal_from_unary.unwrap(),
             "should build a literal expression for given tokens stream if operator does not exist"
         )
     }
 
     #[test]
-    #[should_panic]
     fn test_unary_fails_by_invalid_operator() {
         // Arrange
         let non_unary_operator = Token::Operator(Operator::Star);
@@ -242,9 +297,14 @@ mod ast_parser_tests {
 
         let mut parser = Parser::new(tokens_source);
 
-        // Act & Assert
-        // Notice it should panic because star operator is not a valid operator to perform unary expression building
-        parser.unary();
+        // Act
+        let result = parser.unary();
+
+        // Assert
+        assert!(
+            result.is_err(),
+            "should return error if cannot parse unary expression by invalid operator"
+        )
     }
 
     #[test]
@@ -277,7 +337,8 @@ mod ast_parser_tests {
 
             // Assert
             assert_eq!(
-                factor_expr, expected_expr,
+                factor_expr.unwrap(),
+                expected_expr,
                 "should build a binary expression from factor production rule"
             )
         }
@@ -313,7 +374,8 @@ mod ast_parser_tests {
 
             // Assert
             assert_eq!(
-                factor_expr, expected_expr,
+                factor_expr.unwrap(),
+                expected_expr,
                 "should build a binary expression from factor production rule"
             )
         }

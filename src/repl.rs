@@ -37,10 +37,17 @@ pub fn run() {
 
         let mut parser = Parser::new(tokenizer.tokens.into_iter());
 
-        let ast = parser.program();
-        println!("{}", ast);
+        match parser.program() {
+            Ok(ast) => {
+                println!("{}", ast);
 
-        let result = ast.eval();
-        println!("{}", result);
+                let result = ast.eval();
+                println!("{}", result);
+            }
+            Err(err) => {
+                eprintln!("{err}");
+                continue;
+            }
+        }
     }
 }
