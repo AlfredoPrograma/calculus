@@ -51,11 +51,11 @@ pub fn match_concrete_token<I: Iterator<Item = Token> + Clone>(
 
 #[cfg(test)]
 mod ast_helpers_tests {
-    use std::mem;
+    use std::{mem, vec};
 
     use crate::tokenizer::tokens::{Operator, Token};
 
-    use super::{match_token, peek};
+    use super::{match_concrete_token, match_token, peek};
 
     #[test]
     fn test_peek() {
@@ -139,6 +139,53 @@ mod ast_helpers_tests {
             tokens_source.count(),
             1,
             "non matching tokens shouldn't consume current iterator element"
+        )
+    }
+
+    #[test]
+    fn test_match_concrete_token_success() {
+        // Arrange
+        let number_token = Token::Number(10.0);
+        let mut tokens_source = vec![number_token.clone()].into_iter();
+
+        // Act
+        let matched = match_concrete_token(&[number_token.clone()], &mut tokens_source);
+
+        // Assert
+        assert!(
+            matched.is_some(),
+            "should match token and return fullfilled option"
+        );
+
+        assert_eq!(
+            matched.unwrap(),
+            number_token,
+            "should return matched token"
+        );
+
+        assert_eq!(tokens_source.count(), 0, "should consume the from iterator")
+    }
+
+    #[test]
+    fn test_match_concrete_token_fails() {
+        // Arrange
+        let number_token = Token::Number(10.0);
+        let token_to_match = Token::Number(20.0);
+        let mut tokens_source = vec![number_token.clone()].into_iter();
+
+        // Act
+        let result = match_concrete_token(&[token_to_match], &mut tokens_source);
+
+        // Assert
+        assert!(
+            result.is_none(),
+            "should return empty option if none token matches"
+        );
+
+        assert_eq!(
+            tokens_source.count(),
+            1,
+            "should not consume token from iterator if it does not match"
         )
     }
 }
